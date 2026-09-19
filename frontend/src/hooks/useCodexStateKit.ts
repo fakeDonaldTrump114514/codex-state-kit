@@ -6,6 +6,8 @@ import {
   pollChatgptLogin,
   refreshTurnState,
   setConfig,
+  setBoundTokenLen,
+  setModelBoundTokenLen,
   openUrl,
   startChatgptLogin,
   openWarpTerms as openWarpTermsApi,
@@ -89,19 +91,20 @@ export function useCodexStateKit() {
 
   useEffect(() => () => stopPolling(), [stopPolling]);
 
-  const persistSettings = useCallback(async (home: string, outboundProxy: string, current: Status, outboundMode = current.outboundMode, warpHttp2 = current.warpHttp2) => {
-    if (home === current.codexHome && outboundProxy === current.outboundProxy && outboundMode === current.outboundMode && warpHttp2 === current.warpHttp2) return current;
+  const persistSettings = useCallback(async (home: string, outboundProxy: string, current: Status, outboundMode = current.outboundMode, warpHttp2 = current.warpHttp2, upstreamProxy = current.upstreamProxy) => {
+    if (home === current.codexHome && outboundProxy === current.outboundProxy && outboundMode === current.outboundMode && warpHttp2 === current.warpHttp2 && upstreamProxy === current.upstreamProxy) return current;
     return setConfig({
       proxyListen: current.proxyListen,
       upstream: current.upstream,
       codexHome: home,
       outboundProxy,
+      upstreamProxy,
       outboundMode,
       warpHttp2,
     });
   }, []);
 
-  const saveSettings = useCallback(async (home: string, outboundProxy: string, outboundMode?: OutboundMode, warpHttp2?: boolean) => {
+  const saveSettings = useCallback(async (home: string, outboundProxy: string, outboundMode?: OutboundMode, warpHttp2?: boolean, upstreamProxy?: string) => {
     setBusy("save");
     try {
       const latest = await getStatus();
@@ -110,7 +113,7 @@ export function useCodexStateKit() {
         setDevice(null);
         await cancelChatgptLogin();
       }
-      const next = await persistSettings(home.trim(), outboundProxy, latest, outboundMode, warpHttp2);
+      const next = await persistSettings(home.trim(), outboundProxy, latest, outboundMode, warpHttp2, upstreamProxy?.trim());
       if (next.codexHome !== latest.codexHome) {
         await loadLogin(next.codexHome);
       }
@@ -219,6 +222,26 @@ export function useCodexStateKit() {
     }
   }, [device]);
 
+  const bindTokenLen = useCallback(async (len: number | null) => {
+    try {
+      const next = await setBoundTokenLen(len);
+      setStatus(next);
+      setBanner({ kind: "ok", text: len ? `已全局绑定 ${len} Token` : "已恢复账号默认绑定" });
+    } catch (cause) {
+      setBanner({ kind: "error", text: errorMessage(cause) });
+    }
+  }, []);
+
+  const bindModelTokenLen = useCallback(async (model: string, len: number | null) => {
+    try {
+      const next = await setModelBoundTokenLen(model, len);
+      setStatus(next);
+      setBanner({ kind: "ok", text: len ? `${model} 已绑定 ${len} Token` : `${model} 已恢复跟随全局` });
+    } catch (cause) {
+      setBanner({ kind: "error", text: errorMessage(cause) });
+    }
+  }, []);
+
   return {
     status,
     login,
@@ -234,6 +257,8 @@ export function useCodexStateKit() {
     cancelLogin,
     openLoginPage,
     loadLogin,
+    bindTokenLen,
+    bindModelTokenLen,
     dismissBanner: () => setBanner(null),
   };
 }

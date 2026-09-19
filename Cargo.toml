@@ -1,6 +1,6 @@
 [package]
 name = "codex-state-kit"
-version = "0.0.1"
+version = "0.0.5"
 edition = "2021"
 rust-version = "1.85"
 description = "Transparent local reverse proxy for Codex HTTP and WebSocket"
@@ -23,6 +23,7 @@ http = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json", "socks"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+semver = "1"
 serde_urlencoded = "0.7"
 tokio = { version = "1", features = ["full"] }
 tokio-util = "0.7"
@@ -33,12 +34,15 @@ base64 = "0.22"
 url = "2"
 rand = "0.9"
 sha2 = "0.10"
+flate2 = "1"
+zstd = "0.13"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
 
 [dev-dependencies]
 tempfile = "3"
+minisign-verify = "0.2"
 
 [profile.release]
 codegen-units = 1
